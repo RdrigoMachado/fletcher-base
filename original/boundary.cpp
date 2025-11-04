@@ -7,7 +7,7 @@
 void RandomVelocityBoundary(int sx, int sy, int sz,
 			    int nx, int ny, int nz,
 			    int bord, int absorb,
-			    float *vpz, float *vsv) {
+			    Kokkos::View<float *, HostMemSpace> vpz, Kokkos::View<float *, HostMemSpace> vsv) {
 
   int i, ix, iy, iz;
   int distx, disty, distz, dist;
@@ -22,14 +22,14 @@ void RandomVelocityBoundary(int sx, int sy, int sz,
   for (iz=bord+absorb; iz<nz+bord+absorb; iz++) {
     for (iy=bord+absorb; iy<ny+bord+absorb; iy++) {
       for (i=ind(bord+absorb,iy,iz); i<ind(nx+bord+absorb,iy,iz); i++) {
-	maxP=fmaxf(vpz[i],maxP);
-	maxS=fmaxf(vsv[i],maxS);
+    	maxP=fmaxf(vpz(i),maxP);
+    	maxS=fmaxf(vsv(i),maxS);
       }
     }
   }
-    
+
   bordLen=bord+absorb-1;   // last index on low absortion zone
-  firstIn=bordLen+1;       // first index inside input grid 
+  firstIn=bordLen+1;       // first index inside input grid
   frac=1.0/(float)(absorb);
 
   for (iz=0; iz<sz; iz++) {
@@ -80,17 +80,17 @@ void RandomVelocityBoundary(int sx, int sy, int sz,
 	  dist=(dist >distx)?dist :distx;
 	  bordDist=(float)(dist)*frac;
 	  rfac=(float)rand()/(float)RAND_MAX;
-	  vpz[i]=vpz[ind(ivelx,ively,ivelz)]*(1.0-bordDist)+
+	  vpz(i)=vpz(ind(ivelx,ively,ivelz))*(1.0-bordDist)+
 	    maxP*rfac*bordDist;
-	  vsv[i]=vsv[ind(ivelx,ively,ivelz)]*(1.0-bordDist)+
+	  vsv(i)=vsv(ind(ivelx,ively,ivelz))*(1.0-bordDist)+
 	    maxS*rfac*bordDist;
 	}
 	// null speed at border
 	else
 	//PPL added {} surrounding vpz and vsv lines below
 	{
-	  vpz[i]=0.0;
-	  vsv[i]=0.0;
+	  vpz(i)=0.0;
+	  vsv(i)=0.0;
 	}
       }
     }

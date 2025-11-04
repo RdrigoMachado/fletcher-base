@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "map.h"
+#include "KOKKOS/kokkos_defines.h"
 
 #define FRACABS 0.03125
 
@@ -15,6 +15,6 @@
 void RandomVelocityBoundary(int sx, int sy, int sz,
 			    int nx, int ny, int nz,
 			    int bord, int absorb,
-			    float *vpz, float *vsv);
+			    Kokkos::View<float *, HostMemSpace> vpz, Kokkos::View<float *, HostMemSpace> vsv);
 
 #endif

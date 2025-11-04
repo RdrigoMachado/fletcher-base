@@ -2,7 +2,7 @@
 #   module load gompi
 
 # Default
-backend=CUDA
+backend=KOKKOS
 arch=$(backend)
 
 include config.mk
@@ -13,8 +13,7 @@ OBJ1=\
 	utils.o \
 	boundary.o \
 	walltime.o \
-	model.o \
-	map.o
+	model.o
 
 ifdef PAPI
 	LIBS += $(PAPI_LIBS)
@@ -30,38 +29,32 @@ all: 	$(OBJ)
 	cd $(arch) && make
 	$(CC) $(CFLAGS) -o $(TARGET) $(OBJ) $(arch)/*.o $(LIBS)
 
-main.o:	main.c $(OBJ1)
-	$(CC) -c $(CFLAGS) main.c
+main.o:	main.cpp $(OBJ1)
+	$(CC) -c $(CFLAGS) main.cpp
 
-boundary.o:	boundary.c boundary.h  map.o
-	$(CC) -c $(CFLAGS) boundary.c
+boundary.o:	boundary.cpp boundary.h
+	$(CC) -c $(CFLAGS) boundary.cpp
 
-source.o:	source.c source.h
-	$(CC) -c $(CFLAGS) source.c
+source.o:	source.cpp source.h
+	$(CC) -c $(CFLAGS) source.cpp
 
-utils.o:	utils.c utils.h map.o source.o
-	$(CC) -c $(CFLAGS) utils.c
+utils.o:	utils.cpp utils.h
+	$(CC) -c $(CFLAGS) utils.cpp
 
-map.o:	map.c map.h
-	$(CC) -c $(CFLAGS) map.c
+model.o:	model.cpp model.h
+	$(CC) -c $(CFLAGS) $(COMMON_FLAGS) model.cpp
 
-model.o:	model.c model.h
-	$(CC) -c $(CFLAGS) $(COMMON_FLAGS) model.c
+walltime.o:	walltime.cpp walltime.h
+	$(CC) -c $(CFLAGS) walltime.cpp
 
-walltime.o:	walltime.c walltime.h
-	$(CC) -c $(CFLAGS) walltime.c
-
-ModPAPI.o:	ModPAPI.c ModPAPI.h
-	$(CC) -c $(CFLAGS) ModPAPI.c
+ModPAPI.o:	ModPAPI.cpp ModPAPI.h
+	$(CC) -c $(CFLAGS) ModPAPI.cpp
 
 
-compare.exe:	compare.c
-	gcc compare.c -o compare.exe
+.SUFFIXES	:	.o .cpp
 
-.SUFFIXES	:	.o .c
-
-.c.o:
-	$(CC) $(CFLAGS) $*.c
+.cpp.o:
+	$(CC) $(CFLAGS) $*.cpp
 
 clean:
 	cd $(arch) && make clean

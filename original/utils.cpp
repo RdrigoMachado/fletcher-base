@@ -1,5 +1,5 @@
 #include "utils.h"
-    
+
 
 // DumpFieldToFile: dumps array into a file using RFS format
 
@@ -13,9 +13,9 @@ void DumpFieldToFile(int sx, int sy, int sz,
 
 //PPL  int ix, iy, iz;
   int iy, iz;
-  
+
   // header and binary file names
-  
+
   char fNameHeader[128];
   strcpy(fNameHeader,fName);
   strcat(fNameHeader,".rsf");
@@ -24,12 +24,12 @@ void DumpFieldToFile(int sx, int sy, int sz,
   strcat(fNameBinary,"@");
 
   // create header file in rsf format
-  
+
   FILE *fp;
   fp=fopen(fNameHeader, "w+");
   fprintf(fp,"in=\"./%s\"\n", fNameBinary);
   fprintf(fp,"data_format=\"native_float\"\n");
-  fprintf(fp,"esize=%lu\n", sizeof(float)); 
+  fprintf(fp,"esize=%lu\n", sizeof(float));
   fprintf(fp,"n1=%d\n",ixEnd-ixStart+1);
   fprintf(fp,"d1=%f\n",d1);
   fprintf(fp,"n2=%d\n",iyEnd-iyStart+1);
@@ -39,10 +39,10 @@ void DumpFieldToFile(int sx, int sy, int sz,
   fclose(fp);
 
   // create binary file
-  
+
   fp=fopen(fNameBinary, "w+b");
   for (iz=izStart; iz<=izEnd; iz++)
-    for (iy=iyStart; iy<=iyEnd; iy++) 
+    for (iy=iyStart; iy<=iyEnd; iy++)
       fwrite((void *) (arrP +ind(ixStart,iy,iz)), sizeof(float), ixEnd-ixStart+1, fp);
   fclose(fp);
   int fsize=(ixEnd-ixStart+1)*(iyEnd-iyStart+1)*(izEnd-izStart+1);
@@ -59,8 +59,8 @@ void DumpFieldToFile(int sx, int sy, int sz,
 void DumpSlicePtr(SlicePtr p){
   printf("File %s contains time evolution of (%d:%d,%d:%d,%d:%d)\n",
 	 p->fNameHeader,
-	 p->ixStart, p->ixEnd, 
-	 p->iyStart, p->iyEnd, 
+	 p->ixStart, p->ixEnd,
+	 p->iyStart, p->iyEnd,
 	 p->izStart, p->izEnd);
 }
 
@@ -90,7 +90,7 @@ SlicePtr OpenSliceFile(int ixStart, int ixEnd,
   }
 
   // header and binary file names
-  
+
   strcpy(ret->fName,fName);
   strcpy(ret->fNameHeader,fName);
   strcat(ret->fNameHeader,".rsf");
@@ -99,7 +99,7 @@ SlicePtr OpenSliceFile(int ixStart, int ixEnd,
   strcat(ret->fNameBinary,"@");
 
   // create header and binary files in rsf format
-  
+
   ret->fpHead=fopen(ret->fNameHeader, "w+");
   ret->fpBinary=fopen(ret->fNameBinary, "w+");
   ret->ixStart=ixStart;
@@ -133,7 +133,7 @@ SlicePtr OpenSliceFile(int ixStart, int ixEnd,
 }
 
 
-// DumpSliceFile: appends one array to an opened RFS file 
+// DumpSliceFile: appends one array to an opened RFS file
 
 
 void DumpSliceFile(int sx, int sy, int sz,
@@ -141,18 +141,18 @@ void DumpSliceFile(int sx, int sy, int sz,
 
 //PPL  int ix, iy, iz;
   int iy, iz;
-  
+
   // dump section to binary file
-  
+
   for (iz=p->izStart; iz<=p->izEnd; iz++)
-    for (iy=p->iyStart; iy<=p->iyEnd; iy++) 
+    for (iy=p->iyStart; iy<=p->iyEnd; iy++)
       fwrite((void *) (arrP+ind(p->ixStart,iy,iz)),
 	     sizeof(float),
 	     p->ixEnd-p->ixStart+1,
 	     p->fpBinary);
 
   // increase it count
-  
+
   p->itCnt++;
 }
 
@@ -162,16 +162,16 @@ void DumpSliceFile_Nofor(int sx, int sy, int sz,
 //PPL  int ix, iy, iz;
   int iy, iz;
   int totalSize = sx * sy * sz;
-  
+
   // dump section to binary file
-  
+
   fwrite((void *) arrP,
     sizeof(float),
     totalSize,
     p->fpBinary);
 
   // increase it count
-  
+
   p->itCnt++;
 }
 
@@ -183,7 +183,7 @@ void CloseSliceFile(SlicePtr p){
 
   fprintf(p->fpHead,"in=\"%s\"\n", p->fNameBinary);
   fprintf(p->fpHead,"data_format=\"native_float\"\n");
-  fprintf(p->fpHead,"esize=%lu\n", sizeof(float)); 
+  fprintf(p->fpHead,"esize=%lu\n", sizeof(float));
   switch(p->direction) {
   case XSLICE:
     fprintf(p->fpHead,"n1=%d\n",p->iyEnd-p->iyStart+1);
@@ -225,7 +225,7 @@ void CloseSliceFile(SlicePtr p){
 }
 
 
-// DumpSliceSummary: prints info of one array 
+// DumpSliceSummary: prints info of one array
 
 
 void   DumpSliceSummary(int sx, int sy, int sz,
@@ -236,7 +236,7 @@ void   DumpSliceSummary(int sx, int sy, int sz,
   float maxP, minP, valP;
   maxP=minP=arrP[ind(p->ixStart,p->iyStart,p->izStart)];
   for (iz=p->izStart; iz<=p->izEnd; iz++)
-    for (iy=p->iyStart; iy<=p->iyEnd; iy++) 
+    for (iy=p->iyStart; iy<=p->iyEnd; iy++)
       for (ix=p->ixStart; ix<=p->ixEnd; ix++) {
 	valP=arrP[ind(ix,iy,iz)];
 	maxP=fmaxf(maxP,valP);
@@ -250,14 +250,12 @@ void   DumpSliceSummary(int sx, int sy, int sz,
 // SwapArrays: swap array pointers on time forward array propagation
 
 
-void SwapArrays(float * restrict *pp, float * restrict *pc, float * restrict *qp, float * restrict *qc) {
-  float *tmp;
+void SwapArrays(HostViewFloat1D pp, HostViewFloat1D pc, HostViewFloat1D qp, HostViewFloat1D qc) {
+  auto tmp = pp;
+  pp = pc;
+  pc = tmp;
 
-  tmp=*pp;
-  *pp=*pc;
-  *pc=tmp;
-
-  tmp=*qp;
-  *qp=*qc;
-  *qc=tmp;
+  tmp = qp;
+  qp = qc;
+  qc = tmp;
 }

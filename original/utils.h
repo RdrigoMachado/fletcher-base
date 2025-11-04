@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "map.h"
+#include "KOKKOS/kokkos_defines.h"
 
 
 // DumpFieldToFile: dumps array into a file using RFS format
@@ -65,7 +65,7 @@ SlicePtr OpenSliceFile(int ixStart, int ixEnd,
 		       char *fName);
 
 
-// DumpSliceFile: appends one array to an opened RFS file 
+// DumpSliceFile: appends one array to an opened RFS file
 
 
 void DumpSliceFile(int sx, int sy, int sz,
@@ -81,7 +81,7 @@ void DumpSliceFile_Nofor(int sx, int sy, int sz,
 void CloseSliceFile(SlicePtr p);
 
 
-// DumpSliceSummary: prints info of one array 
+// DumpSliceSummary: prints info of one array
 
 
 void DumpSliceSummary(int sx, int sy, int sz,
@@ -89,6 +89,6 @@ void DumpSliceSummary(int sx, int sy, int sz,
 		      float dt, int it, float *arrP, float src);
 
 
-void SwapArrays(float * restrict *pp, float * restrict *pc, float * restrict *qp, float * restrict *qc);
-#endif
+void SwapArrays(HostViewFloat1D pp, HostViewFloat1D pc, HostViewFloat1D qp, HostViewFloat1D qc);
 
+#endif
