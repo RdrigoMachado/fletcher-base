@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include "map.h"
 #include "KOKKOS/kokkos_defines.h"
 
 #define FRACABS 0.03125

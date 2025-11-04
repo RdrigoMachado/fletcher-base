@@ -13,7 +13,8 @@ OBJ1=\
 	utils.o \
 	boundary.o \
 	walltime.o \
-	model.o
+	model.o \
+	map.o
 
 ifdef PAPI
 	LIBS += $(PAPI_LIBS)
@@ -32,14 +33,17 @@ all: 	$(OBJ)
 main.o:	main.cpp $(OBJ1)
 	$(CC) -c $(CFLAGS) main.cpp
 
-boundary.o:	boundary.cpp boundary.h
+boundary.o:	boundary.cpp boundary.h map.o
 	$(CC) -c $(CFLAGS) boundary.cpp
 
 source.o:	source.cpp source.h
 	$(CC) -c $(CFLAGS) source.cpp
 
-utils.o:	utils.cpp utils.h
+utils.o:	utils.cpp utils.h map.o source.o
 	$(CC) -c $(CFLAGS) utils.cpp
+
+map.o:	map.cpp map.h
+	$(CC) -c $(CFLAGS) map.cpp
 
 model.o:	model.cpp model.h
 	$(CC) -c $(CFLAGS) $(COMMON_FLAGS) model.cpp

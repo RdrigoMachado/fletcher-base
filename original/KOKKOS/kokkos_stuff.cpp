@@ -27,7 +27,7 @@ void KOKKOS_Initialize(const int sx, const int sy, const int sz, const int bord,
 
    sxsy=sx*sy; // one plan
    const size_t msize_vol=sxsy*sz;
-   const size_t msize_vol_bytes=sxsysz*sizeof(float);
+   const size_t msize_vol_bytes=msize_vol*sizeof(float);
    const size_t msize_vol_extra=msize_vol+2*sxsy; // 2 extra plans for wave fields
 
    dev_ch1dxx = Kokkos::View<float*>("dev_ch1dxx", msize_vol);
@@ -52,10 +52,10 @@ void KOKKOS_Initialize(const int sx, const int sy, const int sz, const int bord,
    Kokkos::deep_copy(dev_v2pn, v2pn);
 
    // Wave field arrays with an extra plan
-   dev_pp = Kokkos::View<float**>("dev_pp", msize_vol_extra);
-   dev_pc = Kokkos::View<float**>("dev_pc", msize_vol_extra);
-   dev_qp = Kokkos::View<float**>("dev_qp", msize_vol_extra);
-   dev_qc = Kokkos::View<float**>("dev_qc", msize_vol_extra);
+   dev_pp = Kokkos::View<float*, DeviceMemSpace>("dev_pp", msize_vol_extra);
+   dev_pc = Kokkos::View<float*, DeviceMemSpace>("dev_pc", msize_vol_extra);
+   dev_qp = Kokkos::View<float*, DeviceMemSpace>("dev_qp", msize_vol_extra);
+   dev_qc = Kokkos::View<float*, DeviceMemSpace>("dev_qc", msize_vol_extra);
 
    Kokkos::parallel_for("SetElementsToZero",
         msize_vol_extra,
@@ -86,8 +86,5 @@ void KOKKOS_Finalize()
 
 void KOKKOS_Update_pointers(const int sx, const int sy, const int sz, HostViewFloat1D pc, DeviceViewFloat1D dev_pc)
 {
-   extern float* dev_pc;
-   const size_t sxsysz=((size_t)sx*sy)*sz;
-   const size_t msize_vol=sxsysz*sizeof(float);
    Kokkos::deep_copy(pc, dev_pc);
 }

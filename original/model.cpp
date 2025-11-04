@@ -31,31 +31,32 @@ HostViewFloat1D vpz, HostViewFloat1D vsv, HostViewFloat1D epsilon, HostViewFloat
 HostViewFloat1D phi, HostViewFloat1D theta, int absorb)
 {
     //HOST SPACE VIEWS
-    Kokkos::View(float*, HostMemSpace) ch1dxx;  // isotropy simetry deep angle
-    Kokkos::View(float*, HostMemSpace) ch1dyy;  // isotropy simetry deep angle
-    Kokkos::View(float*, HostMemSpace) ch1dzz;  // isotropy simetry deep angle
-    Kokkos::View(float*, HostMemSpace) ch1dxy;  // isotropy simetry deep angle
-    Kokkos::View(float*, HostMemSpace) ch1dyz;  // isotropy simetry deep angle
-    Kokkos::View(float*, HostMemSpace) ch1dxz;  // isotropy simetry deep angle
-    Kokkos::View(float*, HostMemSpace) v2px;  // coeficient of H2(p)
-    Kokkos::View(float*, HostMemSpace) v2pz;  // coeficient of H1(q)
-    Kokkos::View(float*, HostMemSpace) v2sz;  // coeficient of H1(p-q) and H2(p-q)
-    Kokkos::View(float*, HostMemSpace) v2pn;  // coeficient of H2(p)
+    HostViewFloat1D ch1dxx;  // isotropy simetry deep angle
+    HostViewFloat1D ch1dyy;  // isotropy simetry deep angle
+    HostViewFloat1D ch1dzz;  // isotropy simetry deep angle
+    HostViewFloat1D ch1dxy;  // isotropy simetry deep angle
+    HostViewFloat1D ch1dyz;  // isotropy simetry deep angle
+    HostViewFloat1D ch1dxz;  // isotropy simetry deep angle
+    HostViewFloat1D v2px;  // coeficient of H2(p)
+    HostViewFloat1D v2pz;  // coeficient of H1(q)
+    HostViewFloat1D v2sz;  // coeficient of H1(p-q) and H2(p-q)
+    HostViewFloat1D v2pn;  // coeficient of H2(p)
 
     //DEVICE SPACE VIEWS
-    Kokkos::View<float2*, DeviceMemSpace> dev_ch1dxx;
-    Kokkos::View<float2*, DeviceMemSpace> dev_ch1dyy;
-    Kokkos::View<float2*, DeviceMemSpace> dev_ch1dzz;
-    Kokkos::View<float2*, DeviceMemSpace> dev_ch1dxy;
-    Kokkos::View<float2*, DeviceMemSpace> dev_ch1dyz;
-    Kokkos::View<float2*, DeviceMemSpace> dev_ch1dxz;
-    Kokkos::View<float2*, DeviceMemSpace> dev_v2px;
-    Kokkos::View<float2*, DeviceMemSpace> dev_v2pz;
-    Kokkos::View<float2*, DeviceMemSpace> dev_v2sz;
-    Kokkos::View<float2*, DeviceMemSpace> dev_v2pn;
-    Kokkos::View<float2*, DeviceMemSpace> dev_pp;
-    Kokkos::View<float2*, DeviceMemSpace> dev_pc;
-    Kokkos::View<float2*, DeviceMemSpace> dev_qp;
+    DeviceViewFloat1D dev_ch1dxx;
+    DeviceViewFloat1D dev_ch1dyy;
+    DeviceViewFloat1D dev_ch1dzz;
+    DeviceViewFloat1D dev_ch1dxy;
+    DeviceViewFloat1D dev_ch1dyz;
+    DeviceViewFloat1D dev_ch1dxz;
+    DeviceViewFloat1D dev_v2px;
+    DeviceViewFloat1D dev_v2pz;
+    DeviceViewFloat1D dev_v2sz;
+    DeviceViewFloat1D dev_v2pn;
+    DeviceViewFloat1D dev_pp;
+    DeviceViewFloat1D dev_pc;
+    DeviceViewFloat1D dev_qp;
+    DeviceViewFloat1D dev_qc;
 
 
 
@@ -82,6 +83,7 @@ HostViewFloat1D phi, HostViewFloat1D theta, int absorb)
 
   // DRIVER_Initialize initialize target, allocate data etc
   DRIVER_Initialize(sx, sy, sz, bord,
+            vpz, vsv, epsilon, delta, phi, theta,
 	       ch1dxx, ch1dyy, ch1dzz,
 	       ch1dxy, ch1dyz, ch1dxz,
 	       v2px, v2pz, v2sz, v2pn,
@@ -102,7 +104,7 @@ HostViewFloat1D phi, HostViewFloat1D theta, int absorb)
     // Calculate / obtain source value on i timestep
     float src = Source(dt, it-1);
 
-    DRIVER_InsertSource(dt,it-1,iSource,pc,qc,src, offset);
+    DRIVER_InsertSource(dt,it-1,iSource,offset,dev_pc,dev_qc,src);
 
 #ifdef PAPI
     StartCounters(eventset);
@@ -110,8 +112,14 @@ HostViewFloat1D phi, HostViewFloat1D theta, int absorb)
 
     const double t0=wtime();
     DRIVER_Propagate(  sx,   sy,   sz,   bord,
-		       dx,   dy,   dz,   dt,   it,
-		       pp,    pc,    qp,    qc);
+		    dx,   dy,   dz,   dt,   it,
+			offset,
+		    pp,    pc,    qp,    qc,
+			dev_ch1dxx, dev_ch1dyy, dev_ch1dzz,
+			dev_ch1dxy, dev_ch1dyz, dev_ch1dxz,
+			dev_v2px, dev_v2pz, dev_v2sz, dev_v2pn,
+			dev_pp, dev_pc,
+			dev_qp, dev_qc);
 
     SwapArrays(pp, pc, qp, qc);
     walltime+=wtime()-t0;
@@ -126,7 +134,7 @@ HostViewFloat1D phi, HostViewFloat1D theta, int absorb)
     tSim=it*dt;
     if (tSim >= tOut) {
 
-      DRIVER_Update_pointers(sx,sy,sz,pc);
+      DRIVER_Update_pointers(sx,sy,sz,pc, dev_pc);
 
       // double dd1 = wtime();
       DumpSliceFile_Nofor(sx,sy,sz,pc.data(),sPtr);
@@ -134,7 +142,7 @@ HostViewFloat1D phi, HostViewFloat1D theta, int absorb)
 
       tOut=(++nOut)*dtOutput;
 #ifdef _DUMP
-      DRIVER_Update_pointers(sx,sy,sz,pc);
+      DRIVER_Update_pointers(sx,sy,sz,pc, dev_pc);
       //      DumpSliceSummary(sx,sy,sz,sPtr,dt,it,pc,src);
 #endif
     }
@@ -151,7 +159,7 @@ HostViewFloat1D phi, HostViewFloat1D theta, int absorb)
 #define GIGA 1.0e-9
   const char StringHWM[6]="VmHWM";
   char line[256], title[12],HWMUnit[8];
-  const long HWM;
+  long HWM;
   const double MSamples=(MEGA*(double)totalSamples)/walltime;
 
   FILE *fp=fopen("/proc/self/status","r");

@@ -3,6 +3,7 @@
 
 #include "kokkos_defines.h"
 #include "kokkos_propagate.h"
+#include "../map.h"
 #include "../derivatives.h"
 
 // Propagate: using Fletcher's equations, propagate waves one dt,
@@ -17,6 +18,6 @@ void KOKKOS_Propagate(const int sx, const int sy, const int sz, const int bord,
 		   DeviceViewFloat1D dev_pp, DeviceViewFloat1D dev_pc,
 		   DeviceViewFloat1D dev_qp, DeviceViewFloat1D dev_qc);
 
-void KOKKOS_SwapArrays(HostViewFloat1D pp, HostViewFloat1D pc, HostViewFloat1D qp, HostViewFloat1D qc);
+void KOKKOS_SwapArrays(DeviceViewFloat1D dev_pp, DeviceViewFloat1D dev_pc, DeviceViewFloat1D dev_qp, DeviceViewFloat1D dev_qc);
 
 #endif

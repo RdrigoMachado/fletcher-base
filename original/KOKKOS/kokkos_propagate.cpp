@@ -101,24 +101,21 @@ void KOKKOS_Propagate(const int sx, const int sy, const int sz, const int bord,
                 qp(i + offset)=2.0f*qc(i + offset) - qp(i + offset) + rhsq*dt*dt;
 
             }
+        }
   );
 
-
-
-  // CUDA_CALL(cudaGetLastError());
   KOKKOS_SwapArrays(dev_pp, dev_pc, dev_qp, dev_qc);
-  Kokkos::fence():
-  // CUDA_CALL(cudaDeviceSynchronize());
+  Kokkos::fence();
 
 }
 
 // swap array pointers on time forward array propagation
-void KOKKOS_SwapArrays(HostViewFloat1D pp, HostViewFloat1D pc, HostViewFloat1D qp, HostViewFloat1D qc) {
-  auto temp = pp;
-  pp = pc;
-  pc = temp;
+void KOKKOS_SwapArrays(DeviceViewFloat1D dev_pp, DeviceViewFloat1D dev_pc, DeviceViewFloat1D dev_qp, DeviceViewFloat1D dev_qc) {
+  auto temp = dev_pp;
+  dev_pp = dev_pc;
+  dev_pc = temp;
 
-  temp = qp;
-  qp = qc;
-  qc = temp;
+  temp = dev_qp;
+  dev_qp = dev_qc;
+  dev_qc = temp;
 }

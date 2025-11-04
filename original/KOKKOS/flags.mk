@@ -6,6 +6,7 @@ CC = $(KOKKOS_PATH)/bin/nvcc_wrapper  # ou mpicxx se CPU-only
 
 # Flags de compilação
 CFLAGS += -O3 -std=c++17
+CFLAGS += --expt-extended-lambda
 CFLAGS += -I$(KOKKOS_PATH)/include
 
 # Flags de linkagem

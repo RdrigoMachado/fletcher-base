@@ -5,6 +5,7 @@
 #include "boundary.h"
 #include "source.h"
 #include "utils.h"
+#include "map.h"
 #include "driver.h"
 #include "fletcher.h"
 #include "model.h"
@@ -36,8 +37,6 @@ int main(int argc, char** argv) {
         int iySource;          // source y index
         int izSource;          // source z index
         int iSource;           // source index (ix,iy,iz) maped into 1D array
-
-        float* dev_qc=NULL;
 
         //PPL  int i, ix, iy, iz, it; // for indices
         int i, it;             // for indices
@@ -151,12 +150,12 @@ int main(int argc, char** argv) {
 
         // allocate input anisotropy arrays
 
-        Kokkos::View<float*, HostMemSpace> vpz("vpz", sx*sy*sz);            // p wave speed normal to the simetry plane
-        Kokkos::View<float*, HostMemSpace> vsv("vsv", sx*sy*sz);            // sv wave speed normal to the simetry plane
-        Kokkos::View<float*, HostMemSpace> epsilon("epsilon", sx*sy*sz);    // Thomsen isotropic parameter
-        Kokkos::View<float*, HostMemSpace> delta("delta", sx*sy*sz);        // Thomsen isotropic parameter
-        Kokkos::View<float*, HostMemSpace> phi("phi", sx*sy*sz);            // isotropy simetry azimuth angle
-        Kokkos::View<float*, HostMemSpace> theta("theta", sx*sy*sz);        // isotropy simetry azimuth angle
+        HostViewFloat1D vpz("vpz", sx*sy*sz);            // p wave speed normal to the simetry plane
+        HostViewFloat1D vsv("vsv", sx*sy*sz);            // sv wave speed normal to the simetry plane
+        HostViewFloat1D epsilon("epsilon", sx*sy*sz);    // Thomsen isotropic parameter
+        HostViewFloat1D delta("delta", sx*sy*sz);        // Thomsen isotropic parameter
+        HostViewFloat1D phi("phi", sx*sy*sz);            // isotropy simetry azimuth angle
+        HostViewFloat1D theta("theta", sx*sy*sz);        // isotropy simetry azimuth angle
 
 
         // input anisotropy arrays for selected problem formulation
@@ -242,10 +241,10 @@ int main(int argc, char** argv) {
         			 vpz, vsv);
         // pressure fields at previous, current and future time steps
 
-        Kokkos::View(float*, HostMemSpace) pp ("pp", sx*sy*sz);
-        Kokkos::View(float*, HostMemSpace) pc ("pc", sx*sy*sz);
-        Kokkos::View(float*, HostMemSpace) qp ("qp", sx*sy*sz);
-        Kokkos::View(float*, HostMemSpace) qc ("qc", sx*sy*sz);
+        HostViewFloat1D pp ("pp", sx*sy*sz);
+        HostViewFloat1D pc ("pc", sx*sy*sz);
+        HostViewFloat1D qp ("qp", sx*sy*sz);
+        HostViewFloat1D qc ("qc", sx*sy*sz);
 
         for (i=0; i<sx*sy*sz; i++) {
             pp(i)=0.0f; pc(i)=0.0f;
