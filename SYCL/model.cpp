@@ -1,4 +1,5 @@
 #include "model.h"
+#include <cstdio>
 
 
 uint64_t get_timestamp_ns() {
@@ -26,48 +27,44 @@ void ReportMetricsCSV(double walltime, double MSamples,
 void Model(const int st, const int iSource, const float dtOutput, SlicePtr sPtr,
 const int sx, const int sy, const int sz, const int bord,
 const float dx, const float dy, const float dz, const float dt, const int it,
-HostViewFloat1D pp, HostViewFloat1D pc, HostViewFloat1D qp, HostViewFloat1D qc,
-HostViewFloat1D vpz, HostViewFloat1D vsv, HostViewFloat1D epsilon, HostViewFloat1D delta,
-HostViewFloat1D phi, HostViewFloat1D theta, int absorb)
+float* pp, float* pc, float* qp, float* qc,
+float* vpz, float* vsv, float* epsilon, float* delta,
+float* phi, float* theta, int absorb, sycl::queue q)
 {
     //HOST SPACE VIEWS
-    HostViewFloat1D ch1dxx;  // isotropy simetry deep angle
-    HostViewFloat1D ch1dyy;  // isotropy simetry deep angle
-    HostViewFloat1D ch1dzz;  // isotropy simetry deep angle
-    HostViewFloat1D ch1dxy;  // isotropy simetry deep angle
-    HostViewFloat1D ch1dyz;  // isotropy simetry deep angle
-    HostViewFloat1D ch1dxz;  // isotropy simetry deep angle
-    HostViewFloat1D v2px;  // coeficient of H2(p)
-    HostViewFloat1D v2pz;  // coeficient of H1(q)
-    HostViewFloat1D v2sz;  // coeficient of H1(p-q) and H2(p-q)
-    HostViewFloat1D v2pn;  // coeficient of H2(p)
+    float* ch1dxx;  // isotropy simetry deep angle
+    float* ch1dyy;  // isotropy simetry deep angle
+    float* ch1dzz;  // isotropy simetry deep angle
+    float* ch1dxy;  // isotropy simetry deep angle
+    float* ch1dyz;  // isotropy simetry deep angle
+    float* ch1dxz;  // isotropy simetry deep angle
+    float* v2px;  // coeficient of H2(p)
+    float* v2pz;  // coeficient of H1(q)
+    float* v2sz;  // coeficient of H1(p-q) and H2(p-q)
+    float* v2pn;  // coeficient of H2(p)
 
     //DEVICE SPACE VIEWS
-    DeviceViewFloat1D dev_ch1dxx;
-    DeviceViewFloat1D dev_ch1dyy;
-    DeviceViewFloat1D dev_ch1dzz;
-    DeviceViewFloat1D dev_ch1dxy;
-    DeviceViewFloat1D dev_ch1dyz;
-    DeviceViewFloat1D dev_ch1dxz;
-    DeviceViewFloat1D dev_v2px;
-    DeviceViewFloat1D dev_v2pz;
-    DeviceViewFloat1D dev_v2sz;
-    DeviceViewFloat1D dev_v2pn;
-    DeviceViewFloat1D dev_pp;
-    DeviceViewFloat1D dev_pc;
-    DeviceViewFloat1D dev_qp;
-    DeviceViewFloat1D dev_qc;
+    float* dev_ch1dxx;
+    float* dev_ch1dyy;
+    float* dev_ch1dzz;
+    float* dev_ch1dxy;
+    float* dev_ch1dyz;
+    float* dev_ch1dxz;
+    float* dev_v2px;
+    float* dev_v2pz;
+    float* dev_v2sz;
+    float* dev_v2pn;
+    float* dev_pp;
+    float* dev_pc;
+    float* dev_qp;
+    float* dev_qc;
 
+    float tSim=0.0;
+    int nOut=1;
+    float tOut=nOut*dtOutput;
 
-
-
-
-  float tSim=0.0;
-  int nOut=1;
-  float tOut=nOut*dtOutput;
-
-  const long samplesPropagate=(long)(sx-2*bord)*(long)(sy-2*bord)*(long)(sz-2*bord);
-  const long totalSamples=samplesPropagate*(long)st;
+    const long samplesPropagate=(long)(sx-2*bord)*(long)(sy-2*bord)*(long)(sz-2*bord);
+    const long totalSamples=samplesPropagate*(long)st;
 
 #ifdef PAPI
   long long values[NCOUNTERS];
@@ -80,7 +77,7 @@ HostViewFloat1D phi, HostViewFloat1D theta, int absorb)
   const int eventset=InitPAPI_CreateCounters();
 #endif
 
-
+printf("Iniit\n");
   // DRIVER_Initialize initialize target, allocate data etc
   DRIVER_Initialize(sx, sy, sz, bord,
             vpz, vsv, epsilon, delta, phi, theta,
@@ -91,26 +88,29 @@ HostViewFloat1D phi, HostViewFloat1D theta, int absorb)
 		   dev_ch1dxy, dev_ch1dyz, dev_ch1dxz,
 		   dev_v2px, dev_v2pz, dev_v2sz, dev_v2pn,
 		   dev_pp, dev_pc,
-		   dev_qp, dev_qc);
+		   dev_qp, dev_qc, q);
 
   double walltime=0.0;
   double tdt=0.0;
   uint64_t stamp1 = get_timestamp_ns();
 
-  int offset = 2*sx*sy;
+  int offset = 0;
+  printf("Loop\n");
 
   for (int it=1; it<=st; it++) {
 
     // Calculate / obtain source value on i timestep
     float src = Source(dt, it-1);
+    printf("Insert\n");
 
-    DRIVER_InsertSource(dt,it-1,iSource,offset,dev_pc,dev_qc,src);
+    DRIVER_InsertSource(dt,it-1,iSource,offset,dev_pc,dev_qc,src,q);
 
 #ifdef PAPI
     StartCounters(eventset);
 #endif
 
     const double t0=wtime();
+printf("Propagate\n");
     DRIVER_Propagate(  sx,   sy,   sz,   bord,
 		    dx,   dy,   dz,   dt,   it,
 			offset,
@@ -119,7 +119,7 @@ HostViewFloat1D phi, HostViewFloat1D theta, int absorb)
 			dev_ch1dxy, dev_ch1dyz, dev_ch1dxz,
 			dev_v2px, dev_v2pz, dev_v2sz, dev_v2pn,
 			dev_pp, dev_pc,
-			dev_qp, dev_qc);
+			dev_qp, dev_qc, q);
 
     SwapArrays(pp, pc, qp, qc);
     walltime+=wtime()-t0;
@@ -133,16 +133,18 @@ HostViewFloat1D phi, HostViewFloat1D theta, int absorb)
 
     tSim=it*dt;
     if (tSim >= tOut) {
+        printf("Update\n");
 
-      DRIVER_Update_pointers(sx,sy,sz,pc, dev_pc);
+      DRIVER_Update_pointers(sx, sy, sz,pc, dev_pc, q);
+      printf("Update ok\n");
 
       // double dd1 = wtime();
-      DumpSliceFile_Nofor(sx,sy,sz,pc.data(),sPtr);
+      // DumpSliceFile_Nofor(sx,sy,sz,pc,sPtr);
       // tdt+=wtime()-dd1;
 
       tOut=(++nOut)*dtOutput;
 #ifdef _DUMP
-      DRIVER_Update_pointers(sx,sy,sz,pc, dev_pc);
+      DRIVER_Update_pointers(sx,sy,sz,pc, dev_pc, q);
       //      DumpSliceSummary(sx,sy,sz,sPtr,dt,it,pc,src);
 #endif
     }

@@ -3,34 +3,19 @@
 // Propagate: using Fletcher's equations, propagate waves one dt,
 //            either forward or backward in time
 void KOKKOS_Propagate(const int sx, const int sy, const int sz, const int bord,
-		    const float dx, const float dy, const float dz, const float dt, const int it,
-			int offset,
-		    HostViewFloat1D pp, HostViewFloat1D pc, HostViewFloat1D qp, HostViewFloat1D qc,
-			   DeviceViewFloat1D dev_ch1dxx, DeviceViewFloat1D dev_ch1dyy, DeviceViewFloat1D dev_ch1dzz,
-			   DeviceViewFloat1D dev_ch1dxy, DeviceViewFloat1D dev_ch1dyz, DeviceViewFloat1D dev_ch1dxz,
-			   DeviceViewFloat1D dev_v2px, DeviceViewFloat1D dev_v2pz, DeviceViewFloat1D dev_v2sz, DeviceViewFloat1D dev_v2pn,
-			   DeviceViewFloat1D dev_pp, DeviceViewFloat1D dev_pc,
-			   DeviceViewFloat1D dev_qp, DeviceViewFloat1D dev_qc)
+            const float dx, const float dy, const float dz, const float dt, const int it,
+            int offset,
+            DeviceViewFloat1D dev_ch1dxx, DeviceViewFloat1D dev_ch1dyy, DeviceViewFloat1D dev_ch1dzz,
+            DeviceViewFloat1D dev_ch1dxy, DeviceViewFloat1D dev_ch1dyz, DeviceViewFloat1D dev_ch1dxz,
+            DeviceViewFloat1D dev_v2px, DeviceViewFloat1D dev_v2pz, DeviceViewFloat1D dev_v2sz, DeviceViewFloat1D dev_v2pn,
+            DeviceViewFloat1D dev_pp, DeviceViewFloat1D dev_pc,
+            DeviceViewFloat1D dev_qp, DeviceViewFloat1D dev_qc)
 {
 
-  dim3 threadsPerBlock(BSIZE_X, BSIZE_Y);
-  dim3 numBlocks(sx/threadsPerBlock.x, sy/threadsPerBlock.y);
+  Kokkos::MDRangePolicy<Kokkos::Rank<2>> policy({0,0}, {sx, sy});
 
-  Kokkos::parallel_for(
-        Kokkos::TeamPolicy<ExecutionSpace>(numBlocks.x * numBlocks.y, threadsPerBlock.x * threadsPerBlock.y),
-        KOKKOS_LAMBDA(const Kokkos::TeamPolicy<>::member_type& team){
-            //mapping to cuda logic
-            int block_id = team.league_rank();
-            int blockIdX = block_id % numBlocks.x;
-            int blockIdY = block_id / numBlocks.y;
-
-            int thread_id = team.team_rank();
-            int threadIdX = thread_id % threadsPerBlock.x;
-            int threadIdY = thread_id / threadsPerBlock.y;
-
-            const int ix=blockIdX * threadsPerBlock.x + threadIdX;
-            const int iy=blockIdY * threadsPerBlock.y + threadIdY;
-
+  Kokkos::parallel_for("Propagate", policy,
+        KOKKOS_LAMBDA(int ix, int iy){
             const int strideX=ind(1,0,0)-ind(0,0,0);
             const int strideY=ind(0,1,0)-ind(0,0,0);
             const int strideZ=ind(0,0,1)-ind(0,0,0);
@@ -51,12 +36,12 @@ void KOKKOS_Propagate(const int sx, const int sy, const int sz, const int bord,
 
                 // p derivatives, H1(p) and H2(p)
 
-                const float pyy= Der2(pc, i + offset, strideY, dyyinv);
-                const float pzz= Der2(pc, i + offset, strideZ, dzzinv);
-                const float pxx= Der2(pc, i + offset, strideX, dxxinv);
-                const float pxy= DerCross(pc, i + offset, strideX, strideY, dxyinv);
-                const float pyz= DerCross(pc, i + offset, strideY, strideZ, dyzinv);
-                const float pxz= DerCross(pc, i + offset, strideX, strideZ, dxzinv);
+                const float pyy= Der2(dev_pc, i + offset, strideY, dyyinv);
+                const float pzz= Der2(dev_pc, i + offset, strideZ, dzzinv);
+                const float pxx= Der2(dev_pc, i + offset, strideX, dxxinv);
+                const float pxy= DerCross(dev_pc, i + offset, strideX, strideY, dxyinv);
+                const float pyz= DerCross(dev_pc, i + offset, strideY, strideZ, dyzinv);
+                const float pxz= DerCross(dev_pc, i + offset, strideX, strideZ, dxzinv);
 
                 const float cpxx=dev_ch1dxx(i)*pxx;
                 const float cpyy=dev_ch1dyy(i)*pyy;
@@ -69,12 +54,12 @@ void KOKKOS_Propagate(const int sx, const int sy, const int sz, const int bord,
 
                 // q derivatives, H1(q) and H2(q)
 
-                const float qxx= Der2(qc, i + offset, strideX, dxxinv);
-                const float qyy= Der2(qc, i + offset, strideY, dyyinv);
-                const float qzz= Der2(qc, i + offset, strideZ, dzzinv);
-                const float qxy= DerCross(qc, i + offset, strideX,  strideY, dxyinv);
-                const float qyz= DerCross(qc, i + offset, strideY,  strideZ, dyzinv);
-                const float qxz= DerCross(qc, i + offset, strideX,  strideZ, dxzinv);
+                const float qxx= Der2(dev_qc, i + offset, strideX, dxxinv);
+                const float qyy= Der2(dev_qc, i + offset, strideY, dyyinv);
+                const float qzz= Der2(dev_qc, i + offset, strideZ, dzzinv);
+                const float qxy= DerCross(dev_qc, i + offset, strideX,  strideY, dxyinv);
+                const float qyz= DerCross(dev_qc, i + offset, strideY,  strideZ, dyzinv);
+                const float qxz= DerCross(dev_qc, i + offset, strideX,  strideZ, dxzinv);
 
                 const float cqxx=dev_ch1dxx(i)*qxx;
                 const float cqyy=dev_ch1dyy(i)*qyy;
@@ -97,8 +82,8 @@ void KOKKOS_Propagate(const int sx, const int sy, const int sz, const int bord,
 
                 // new p and q
 
-                pp(i + offset)=2.0f*pc(i + offset) - pp(i + offset) + rhsp*dt*dt;
-                qp(i + offset)=2.0f*qc(i + offset) - qp(i + offset) + rhsq*dt*dt;
+                dev_pp(i + offset)=2.0f*dev_pc(i + offset) - dev_pp(i + offset) + rhsp*dt*dt;
+                dev_qp(i + offset)=2.0f*dev_qc(i + offset) - dev_qp(i + offset) + rhsq*dt*dt;
 
             }
         }

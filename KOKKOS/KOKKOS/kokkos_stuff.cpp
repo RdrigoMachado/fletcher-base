@@ -3,14 +3,15 @@
 static size_t sxsy=0;
 
 void KOKKOS_Initialize(const int sx, const int sy, const int sz, const int bord,
-	       HostViewFloat1D ch1dxx, HostViewFloat1D ch1dyy, HostViewFloat1D ch1dzz,
-	       HostViewFloat1D ch1dxy, HostViewFloat1D ch1dyz, HostViewFloat1D ch1dxz,
-	       HostViewFloat1D v2px, HostViewFloat1D v2pz, HostViewFloat1D v2sz, HostViewFloat1D v2pn,
-		   DeviceViewFloat1D dev_ch1dxx, DeviceViewFloat1D dev_ch1dyy, DeviceViewFloat1D dev_ch1dzz,
-		   DeviceViewFloat1D dev_ch1dxy, DeviceViewFloat1D dev_ch1dyz, DeviceViewFloat1D dev_ch1dxz,
-		   DeviceViewFloat1D dev_v2px, DeviceViewFloat1D dev_v2pz, DeviceViewFloat1D dev_v2sz, DeviceViewFloat1D dev_v2pn,
-		   DeviceViewFloat1D dev_pp, DeviceViewFloat1D dev_pc,
-		   DeviceViewFloat1D dev_qp, DeviceViewFloat1D dev_qc)
+                        HostViewFloat1D ch1dxx, HostViewFloat1D ch1dyy, HostViewFloat1D ch1dzz, HostViewFloat1D ch1dxy,
+                        HostViewFloat1D ch1dyz, HostViewFloat1D ch1dxz,
+                        HostViewFloat1D v2px, HostViewFloat1D v2pz, HostViewFloat1D v2sz, HostViewFloat1D v2pn,
+
+                        DeviceViewFloat1D& dev_ch1dxx, DeviceViewFloat1D& dev_ch1dyy, DeviceViewFloat1D& dev_ch1dzz,
+                        DeviceViewFloat1D& dev_ch1dxy, DeviceViewFloat1D& dev_ch1dyz, DeviceViewFloat1D& dev_ch1dxz,
+                        DeviceViewFloat1D& dev_v2px, DeviceViewFloat1D& dev_v2pz, DeviceViewFloat1D& dev_v2sz, DeviceViewFloat1D& dev_v2pn,
+                        DeviceViewFloat1D& dev_pp, DeviceViewFloat1D& dev_pc,
+                        DeviceViewFloat1D& dev_qp, DeviceViewFloat1D& dev_qc)
 {
 
   // Check sx,sy values
@@ -57,6 +58,8 @@ void KOKKOS_Initialize(const int sx, const int sy, const int sz, const int bord,
    dev_qp = Kokkos::View<float*, DeviceMemSpace>("dev_qp", msize_vol_extra);
    dev_qc = Kokkos::View<float*, DeviceMemSpace>("dev_qc", msize_vol_extra);
 
+   printf("Parallel\n");
+
    Kokkos::parallel_for("SetElementsToZero",
         msize_vol_extra,
         KOKKOS_LAMBDA (const int i) {
@@ -86,5 +89,10 @@ void KOKKOS_Finalize()
 
 void KOKKOS_Update_pointers(const int sx, const int sy, const int sz, HostViewFloat1D pc, DeviceViewFloat1D dev_pc)
 {
-   Kokkos::deep_copy(pc, dev_pc);
+    size_t sxsy = sx * sy;
+    size_t msize_vol = sx * sy * sz;
+
+    auto dev_sub = Kokkos::subview(dev_pc, std::make_pair(sxsy, sxsy + msize_vol));
+
+    Kokkos::deep_copy(pc, dev_sub);
 }

@@ -27,7 +27,7 @@ OBJ=main.o $(OBJ1)
 TARGET = ModelagemFletcher.exe
 
 all: 	$(OBJ)
-	cd $(arch) && make
+	+$(MAKE) -C $(arch)
 	$(CC) $(CFLAGS) -o $(TARGET) $(OBJ) $(arch)/*.o $(LIBS)
 
 main.o:	main.cpp $(OBJ1)

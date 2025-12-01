@@ -29,18 +29,21 @@
 
 
 
-void DRIVER_Initialize(const int sx, const int sy, const int sz, const int bord,
-                       HostViewFloat1D vpz, HostViewFloat1D vsv, HostViewFloat1D epsilon, HostViewFloat1D delta,
-                       HostViewFloat1D phi, HostViewFloat1D theta,
+void DRIVER_Initialize(
+    const int sx, const int sy, const int sz, const int bord,
+    HostViewFloat1D vpz, HostViewFloat1D vsv, HostViewFloat1D epsilon,
+    HostViewFloat1D delta, HostViewFloat1D phi, HostViewFloat1D theta,
 
-                       HostViewFloat1D ch1dxx, HostViewFloat1D ch1dyy, HostViewFloat1D ch1dzz, HostViewFloat1D ch1dxy,
-                       HostViewFloat1D ch1dyz, HostViewFloat1D ch1dxz,
-                       HostViewFloat1D v2px, HostViewFloat1D v2pz, HostViewFloat1D v2sz, HostViewFloat1D v2pn,
+    HostViewFloat1D ch1dxx, HostViewFloat1D ch1dyy, HostViewFloat1D ch1dzz,
+    HostViewFloat1D ch1dxy, HostViewFloat1D ch1dyz, HostViewFloat1D ch1dxz,
+    HostViewFloat1D v2px, HostViewFloat1D v2pz, HostViewFloat1D v2sz, HostViewFloat1D v2pn,
 
-                       DeviceViewFloat1D dev_ch1dxx, DeviceViewFloat1D dev_ch1dyy, DeviceViewFloat1D dev_ch1dzz,
-                       DeviceViewFloat1D dev_ch1dxy, DeviceViewFloat1D dev_ch1dyz, DeviceViewFloat1D dev_ch1dxz,
-                       DeviceViewFloat1D dev_v2px, DeviceViewFloat1D dev_v2pz, DeviceViewFloat1D dev_v2sz, DeviceViewFloat1D dev_v2pn,
-                       DeviceViewFloat1D dev_pp, DeviceViewFloat1D dev_pc, DeviceViewFloat1D dev_qp, DeviceViewFloat1D dev_qc)
+    DeviceViewFloat1D& dev_ch1dxx, DeviceViewFloat1D& dev_ch1dyy, DeviceViewFloat1D& dev_ch1dzz,
+    DeviceViewFloat1D& dev_ch1dxy, DeviceViewFloat1D& dev_ch1dyz, DeviceViewFloat1D& dev_ch1dxz,
+    DeviceViewFloat1D& dev_v2px, DeviceViewFloat1D& dev_v2pz, DeviceViewFloat1D& dev_v2sz, DeviceViewFloat1D& dev_v2pn,
+
+    DeviceViewFloat1D& dev_pp, DeviceViewFloat1D& dev_pc,
+    DeviceViewFloat1D& dev_qp, DeviceViewFloat1D& dev_qc)
 {
     int msize_vol = sx*sy*sz;
     ch1dxx = Kokkos::View<float*, HostMemSpace>("ch1dxx", msize_vol);
@@ -93,7 +96,7 @@ printf("v2sz=%e; v2pz=%e, v2px=%e, v2pn=%e\n",
      v2sz(iPrint), v2pz(iPrint), v2px(iPrint), v2pn(iPrint));
 }
 #endif
-
+    printf("Kokkos init\n");
 	KOKKOS_Initialize(sx, sy, sz, bord,
 	       ch1dxx, ch1dyy, ch1dzz,
 	       ch1dxy, ch1dyz, ch1dxz,
@@ -124,7 +127,6 @@ void DRIVER_Update_pointers(const int sx, const int sy, const int sz, HostViewFl
 void DRIVER_Propagate(const int sx, const int sy, const int sz, const int bord,
                       const float dx, const float dy, const float dz, const float dt, const int it,
                       int offset,
-                    HostViewFloat1D pp, HostViewFloat1D pc, HostViewFloat1D qp, HostViewFloat1D qc,
                     DeviceViewFloat1D dev_ch1dxx, DeviceViewFloat1D dev_ch1dyy, DeviceViewFloat1D dev_ch1dzz,
                     DeviceViewFloat1D dev_ch1dxy, DeviceViewFloat1D dev_ch1dyz, DeviceViewFloat1D dev_ch1dxz,
                     DeviceViewFloat1D dev_v2px, DeviceViewFloat1D dev_v2pz, DeviceViewFloat1D dev_v2sz, DeviceViewFloat1D dev_v2pn,
@@ -136,7 +138,6 @@ void DRIVER_Propagate(const int sx, const int sy, const int sz, const int bord,
 	   KOKKOS_Propagate(  sx,   sy,   sz,   bord,
 	                    dx,   dy,   dz,   dt,   it,
 						offset,
-	                    pp,    pc,    qp,    qc,
 						dev_ch1dxx, dev_ch1dyy, dev_ch1dzz,
 						dev_ch1dxy, dev_ch1dyz, dev_ch1dxz,
 						dev_v2px, dev_v2pz, dev_v2sz, dev_v2pn,
